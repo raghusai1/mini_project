@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Indian TTS App</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&family=Poppins&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      color: #fff;
+      margin: 0;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0,255,255,0.2);
+      width: 100%;
+      max-width: 600px;
+    }
+    h1 {
+      text-align: center;
+      color: #00fff7;
+      font-family: 'Orbitron', sans-serif;
+      margin-bottom: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 140px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      color: white;
+      margin-bottom: 15px;
+      resize: none;
+    }
+    select, input[type="file"], input[type="range"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 10px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+    button {
+      padding: 12px;
+      margin: 5px 2px;
+      border: none;
+      border-radius: 10px;
+      background-color: #00fff7;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      width: 23%;
+    }
+    button:hover {
+      background-color: #0ff;
+      box-shadow: 0 0 10px #00fff7;
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    label {
+      font-size: 14px;
+      margin-bottom: 5px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎙 Indian TTS (4 Languages)</h1>
+
+    <label for="languageSelect">🌐 Select Language</label>
+    <select id="languageSelect">
+      <option value="en">English</option>
+      <option value="te">Telugu</option>
+      <option value="hi">Hindi</option>
+      <option value="ta">Tamil</option>
+    </select>
+
+    <label for="voiceSelect">🎤 Select Voice</label>
+    <select id="voiceSelect"></select>
+
+    <textarea id="textInput" placeholder="Type or load PDF..."></textarea>
+
+    <label for="pdfUpload">📁 Upload PDF</label>
+    <input type="file" id="pdfUpload" accept="application/pdf" />
+
+    <label for="rate">Speed: <span id="rateVal">1</span></label>
+    <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1">
+
+    <label for="pitch">Pitch: <span id="pitchVal">1</span></label>
+    <input type="range" id="pitch" min="0" max="2" step="0.1" value="1">
+
+    <div class="controls">
+      <button onclick="speakText()">▶ Play</button>
+      <button onclick="pauseSpeech()">⏸ Pause</button>
+      <button onclick="resumeSpeech()">⏯ Resume</button>
+      <button onclick="stopSpeech()">⏹ Stop</button>
+    </div>
+  </div>
+
+  <script>
+    const textInput = document.getElementById('textInput');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const languageSelect = document.getElementById('languageSelect');
+    const rate = document.getElementById('rate');
+    const pitch = document.getElementById('pitch');
+    const rateVal = document.getElementById('rateVal');
+    const pitchVal = document.getElementById('pitchVal');
+    const pdfUpload = document.getElementById('pdfUpload');
+
+    let allVoices = [];
+    let utterance;
+
+    const languageSamples = {
+      en: "Hello, how are you?",
+      hi: "नमस्ते, आप कैसे हैं?",
+      te: "హలో, మీరు ఎలా ఉన్నారు?",
+      ta: "வணக்கம், நீங்கள் எப்படி இருக்கிறீர்கள்?"
+    };
+
+    function filterVoicesByLang(langCode) {
+      const filtered = allVoices.filter(v => v.lang.toLowerCase().startsWith(langCode));
+      voiceSelect.innerHTML = '';
+      filtered.slice(0, 4).forEach(v => {
+        const option = document.createElement('option');
+        option.textContent = `${v.name} (${v.lang})`;
+        option.value = v.name;
+        voiceSelect.appendChild(option);
+      });
+    }
+
+    function speakText() {
+      if (speechSynthesis.speaking) speechSynthesis.cancel();
+      utterance = new SpeechSynthesisUtterance(textInput.value);
+      const selectedVoice = voiceSelect.value;
+      utterance.voice = allVoices.find(v => v.name === selectedVoice);
+      utterance.rate = parseFloat(rate.value);
+      utterance.pitch = parseFloat(pitch.value);
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function pauseSpeech() {
+      if (speechSynthesis.speaking && !speechSynthesis.paused) {
+        speechSynthesis.pause();
+      }
+    }
+
+    function resumeSpeech() {
+      if (speechSynthesis.paused) {
+        speechSynthesis.resume();
+      }
+    }
+
+    function stopSpeech() {
+      speechSynthesis.cancel();
+    }
+
+    rate.addEventListener('input', () => {
+      rateVal.textContent = rate.value;
+    });
+
+    pitch.addEventListener('input', () => {
+      pitchVal.textContent = pitch.value;
+    });
+
+    languageSelect.addEventListener('change', () => {
+      const selectedLang = languageSelect.value;
+      textInput.value = languageSamples[selectedLang] || "";
+      filterVoicesByLang(selectedLang);
+    });
+
+    pdfUpload.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (file && file.type === 'application/pdf') {
+        const reader = new FileReader();
+        reader.onload = async function () {
+          const typedArray = new Uint8Array(this.result);
+          const pdf = await pdfjsLib.getDocument(typedArray).promise;
+          let text = '';
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            const strings = content.items.map(item => item.str);
+            text += strings.join(' ') + '\n\n';
+          }
+          textInput.value = text.trim();
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        alert("Please upload a valid PDF file.");
+      }
+    });
+
+    function loadVoices() {
+      allVoices = window.speechSynthesis.getVoices();
+      const defaultLang = languageSelect.value;
+      filterVoicesByLang(defaultLang);
+      textInput.value = languageSamples[defaultLang];
+    }
+
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = loadVoices;
+    } else {
+      setTimeout(loadVoices, 500);
+    }
+  </script>
+</body>
+</html>
